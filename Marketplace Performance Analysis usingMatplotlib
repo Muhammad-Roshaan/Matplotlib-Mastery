@@ -1,0 +1,195 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+df = pd.read_csv('/kaggle/input/e-commerce-trends-a-guide-to-leveraging-dataset/ecommerce_product_dataset.csv')
+
+print("First few rows of the dataset:")
+print(df.head())
+
+print("\nSummary statistics:")
+print(df.describe())
+fig = px.pie(df, names='Category', title='Distribution of Product Categories')
+fig.show()
+df['DateAdded'] = pd.to_datetime(df['DateAdded'])
+sales_over_time = df.groupby(df['DateAdded'].dt.to_period('M')).agg({'Sales': 'sum'}).reset_index()
+sales_over_time['DateAdded'] = sales_over_time['DateAdded'].dt.to_timestamp()
+
+fig = px.area(sales_over_time, x='DateAdded', y='Sales', title='Sales Over Time')
+fig.show()
+monthly_sales = df.groupby(df['DateAdded'].dt.to_period('M')).agg({'Sales': 'sum'}).reset_index()
+monthly_sales['DateAdded'] = monthly_sales['DateAdded'].dt.to_timestamp()
+
+fig = go.Figure(go.Waterfall(
+    name="20", orientation="v",
+    x=monthly_sales['DateAdded'], textposition="outside",
+    text=monthly_sales['Sales'],
+    y=monthly_sales['Sales'],
+    connector={"line":{"color":"rgb(63, 63, 63)"}},
+))
+
+fig.update_layout(
+    title="Monthly Sales Breakdown",
+    showlegend=True
+)
+
+fig.show()
+Bubble Chart: Sales and Rating by Category
+category_group = df.groupby('Category').agg({'Sales': 'sum', 'Rating': 'mean', 'NumReviews': 'sum'}).reset_index()
+
+fig = px.scatter(category_group, x='Sales', y='Rating', size='NumReviews', color='Category',
+                 title='Sales and Rating by Category', size_max=60)
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Scatter Plot: Price vs. Sales
+fig = px.scatter(df, x='Price', y='Sales', color='Category', title='Price vs. Sales', hover_data=['ProductName'])
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Radar Chart: Average Ratings by Category
+ratings_by_category = df.groupby('Category').agg({'Rating': 'mean'}).reset_index()
+
+fig = go.Figure()
+
+fig.add_trace(go.Scatterpolar(
+      r=ratings_by_category['Rating'],
+      theta=ratings_by_category['Category'],
+      fill='toself',
+      name='Average Ratings'
+))
+
+fig.update_layout(
+  polar=dict(
+    radialaxis=dict(
+      visible=True,
+      range=[0, 5]
+    )),
+  showlegend=False,
+  title='Average Ratings by Category'
+)
+
+fig.show()
+Funnel Chart: Sales Funnel
+funnel_data = df.groupby('Category').agg({'Sales': 'sum'}).reset_index().sort_values(by='Sales', ascending=False)
+
+fig = go.Figure(go.Funnel(
+    y=funnel_data['Category'],
+    x=funnel_data['Sales'],
+    textinfo="value+percent initial"))
+
+fig.update_layout(title='Sales Funnel by Category')
+fig.show()
+Line Chart: Stock Quantity Over Time
+df['YearMonth'] = df['DateAdded'].dt.to_period('M')
+stock_over_time = df.groupby(['YearMonth', 'Category']).agg({'StockQuantity': 'sum'}).reset_index()
+stock_over_time['YearMonth'] = stock_over_time['YearMonth'].dt.to_timestamp()
+
+fig = px.line(stock_over_time, x='YearMonth', y='StockQuantity', color='Category', title='Stock Quantity Over Time')
+fig.update_layout(xaxis_title='Time', yaxis_title='Stock Quantity')
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Bar Chart: Average Discount by Category
+discount_by_category = df.groupby('Category').agg({'Discount': 'mean'}).reset_index()
+
+fig = px.bar(discount_by_category, x='Category', y='Discount', title='Average Discount by Category', color='Category')
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Histogram: Distribution of Sales
+fig = px.histogram(df, x='Sales', nbins=50, title='Distribution of Sales')
+fig.show()
+Box Plot: Price Distribution by Category
+fig = px.box(df, x='Category', y='Price', title='Price Distribution by Category', color='Category')
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Violin Plot: Rating Distribution by Category
+fig = px.violin(df, x='Category', y='Rating', box=True, points='all', title='Rating Distribution by Category', color='Category')
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Heatmap: Sales by City and Category
+sales_by_city_category = df.pivot_table(values='Sales', index='City', columns='Category', aggfunc='sum', fill_value=0)
+
+fig = px.imshow(sales_by_city_category, aspect="auto", title='Sales by City and Category', labels=dict(color="Sales"))
+fig.show()
+Scatter Plot Matrix: Relationship Between Numerical Features
+fig = px.scatter_matrix(df[['Price', 'Rating', 'NumReviews', 'StockQuantity']], title='Scatter Plot Matrix of Numerical Features')
+fig.show()
+Heatmap: Correlation Matrix
+correlation_matrix = df.select_dtypes(include=['float64', 'int64']).corr()
+fig = px.imshow(correlation_matrix, text_auto=True, aspect="auto", title='Correlation Matrix Heatmap')
+fig.show()
+Line Chart: Sales Trend by Category
+sales_trend_by_category = df.groupby(['DateAdded', 'Category']).agg({'Sales': 'sum'}).reset_index()
+fig = px.line(sales_trend_by_category, x='DateAdded', y='Sales', color='Category', title='Sales Trend by Category')
+fig.show()
+/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:
+
+When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.
+
+Treemap: Sales by Category and Product
+fig = px.treemap(df, path=['Category', 'ProductName'], values='Sales', title='Sales by Category and Product')
+fig.show()
+Bar Chart: Top 10 Products by Sales
+top_products_sales = df.groupby('ProductName').agg({'Sales': 'sum'}).reset_index().sort_values(by='Sales', ascending=False).head(10)
+fig = px.bar(top_products_sales, x='Sales', y='ProductName', orientation='h', title='Top 10 Products by Sales')
+fig.show()
+Sunburst Chart: Sales Distribution by Category and City
+fig = px.sunburst(df, path=['Category', 'City'], values='Sales', title='Sales Distribution by Category and City')
+fig.show()
+Sales and Rating by City
+city_group = df.groupby('City').agg({'Sales': 'sum', 'Rating': 'mean'}).reset_index()
+city_group
+City	Sales	Rating
+0	Akron	17265	2.878571
+1	Albany	10335	2.644444
+2	Albuquerque	5313	2.911111
+3	Allentown	13489	2.753846
+4	Atlanta	15098	3.950000
+...	...	...	...
+96	Tulsa	13340	3.175000
+97	Virginia Beach	13438	3.030769
+98	Washington	5981	3.028571
+99	Wichita	5031	3.357143
+100	Worcester	5232	3.220000
+101 rows × 3 columns
+
+Top 10 cities by sales
+top_cities_sales = city_group.sort_values(by='Sales', ascending=False).head(10)
+top_cities_sales
+City	Sales	Rating
+70	Pittsburgh	20633	3.700000
+85	San Francisco	18222	3.006250
+64	Oklahoma City	17886	3.215385
+89	Spokane	17786	3.117647
+0	Akron	17265	2.878571
+67	Palm Bay	17238	3.376471
+39	Houston	16963	2.866667
+61	New York	16962	3.052941
+75	Queens	16392	3.216667
+19	Charlotte	15797	2.742857
+fig = px.bar(top_cities_sales, x='Sales', y='City', orientation='h', title='Top 10 Cities by Total Sales')
+fig.show()
+Top 10 cities by rating
+top_cities_rating = city_group.sort_values(by='Rating', ascending=False).head(10)
+fig = px.bar(top_cities_rating, x='Rating', y='City', orientation='h', title='Top 10 Cities by Average Rating')
+fig.show()
